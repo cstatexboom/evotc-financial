@@ -232,24 +232,45 @@ function ModelSection() {
 }
 
 function CourtsSection() {
+  const heatmapColumns = utilizationHeatmap[0]?.values.map((item) => item.slot) ?? [];
+  const heatmapCellStyle = (value: number) => ({
+    backgroundColor: `rgba(183,255,106,${0.035 + (value / 100) * 0.28})`,
+    borderColor: value >= 50 ? 'rgba(183,255,106,0.22)' : 'rgba(245,243,238,0.08)',
+  });
+
   return (
     <Section eyebrow="03 / Capacity" title="Courts / 场地模型">
       <div className="grid gap-5 lg:grid-cols-2">
-        <ChartCard title="Court Utilization Heatmap / 场地利用率热力图" note="Covered evening utilization remains the key operating lever. 顶棚晚场是核心变量。">
-          <div className="grid h-full grid-cols-2 gap-3 pt-4 sm:grid-cols-4">
-            {utilizationHeatmap.map((item) => (
-              <div
-                key={`${item.type}-${item.slot}`}
-                className="flex min-h-28 flex-col justify-between rounded-3xl border border-white/10 p-4"
-                style={{ backgroundColor: `rgba(183,255,106,${0.05 + item.value / 180})` }}
-              >
-                <div>
-                  <p className="text-sm font-medium text-[#F5F3EE]">{item.type}</p>
-                  <p className="mt-1 text-xs leading-5 text-[#A7ADB7]">{item.slot}</p>
-                </div>
-                <p className="text-2xl font-semibold text-[#B7FF6A]">{item.value}%</p>
+        <ChartCard
+          title="Court Utilization Heatmap / 场地利用率热力图"
+          note="Covered evening utilization is the key operating lever. 顶棚晚场利用率是核心变量。"
+        >
+          <div className="flex h-full items-center">
+            <div className="w-full overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.018]">
+              <div className="grid grid-cols-[minmax(92px,1.15fr)_repeat(4,minmax(64px,1fr))] border-b border-white/10 bg-white/[0.018]">
+                <div className="px-4 py-3" />
+                {heatmapColumns.map((column) => (
+                  <div key={column} className="px-2 py-3 text-center text-xs font-medium text-[#A7ADB7]">
+                    {column}
+                  </div>
+                ))}
               </div>
-            ))}
+              {utilizationHeatmap.map((row) => (
+                <div key={row.row} className="grid grid-cols-[minmax(92px,1.15fr)_repeat(4,minmax(64px,1fr))] border-b border-white/[0.06] last:border-b-0">
+                  <div className="flex items-center px-4 py-4 text-sm font-medium text-[#F5F3EE]">{row.row}</div>
+                  {row.values.map((cell) => (
+                    <div key={`${row.row}-${cell.slot}`} className="p-1.5">
+                      <div
+                        className="flex min-h-16 items-center justify-center rounded-2xl border text-2xl font-semibold text-[#F5F3EE]"
+                        style={heatmapCellStyle(cell.value)}
+                      >
+                        <span className={cell.value >= 50 ? 'text-[#B7FF6A]' : 'text-[#D8DDD2]'}>{cell.value}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
         </ChartCard>
         <ChartCard title="Covered vs Outdoor Revenue / 顶棚与室外收入贡献" note="36-month court booking contribution by court type.">

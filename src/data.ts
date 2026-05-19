@@ -397,14 +397,24 @@ export const revenueStructure = [
 ];
 
 export const utilizationHeatmap = [
-  { type: 'Covered / 顶棚', slot: 'Weekday Day / 工作日白天', value: 10 },
-  { type: 'Covered / 顶棚', slot: 'Weekday Evening / 工作日晚场', value: 50 },
-  { type: 'Covered / 顶棚', slot: 'Weekend Day / 周末白天', value: 20 },
-  { type: 'Covered / 顶棚', slot: 'Weekend Evening / 周末晚场', value: 60 },
-  { type: 'Outdoor / 室外', slot: 'Weekday Day / 工作日白天', value: 15 },
-  { type: 'Outdoor / 室外', slot: 'Weekday Evening / 工作日晚场', value: 55 },
-  { type: 'Outdoor / 室外', slot: 'Weekend Day / 周末白天', value: 25 },
-  { type: 'Outdoor / 室外', slot: 'Weekend Evening / 周末晚场', value: 65 },
+  {
+    row: 'Covered 顶棚',
+    values: [
+      { slot: 'WD Day', value: 10 },
+      { slot: 'WD Eve', value: 50 },
+      { slot: 'WE Day', value: 20 },
+      { slot: 'WE Eve', value: 60 },
+    ],
+  },
+  {
+    row: 'Outdoor 室外',
+    values: [
+      { slot: 'WD Day', value: 15 },
+      { slot: 'WD Eve', value: 55 },
+      { slot: 'WE Day', value: 25 },
+      { slot: 'WE Eve', value: 65 },
+    ],
+  },
 ];
 
 export const courtContribution = [
