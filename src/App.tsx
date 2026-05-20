@@ -461,6 +461,7 @@ function CashflowSection() {
             </p>
             <p className="mt-4 text-lg leading-8 text-[#A7ADB7]">储值提升了现金流，也形成了未来履约义务。</p>
             <div className="mt-8 space-y-4 text-sm leading-6 text-[#A7ADB7]">
+              <p>Member discounts reduce actual stored value consumption relative to recognized revenue. 会员折扣会降低实际储值消耗，因此实际储值扣减低于确认收入。</p>
               <p>Tax is calculated on recognized sales, not stored-value cash. 税费按确认销售额计算，而不是按储值现金流计算。</p>
               <p>Rent is deducted only at payment nodes. 房租只在支付节点扣除。</p>
               <p>Dividend distributions reduce cash balance at the end of 2027 and 2028. 分红在2027年底与2028年底扣减现金。</p>
@@ -468,7 +469,7 @@ function CashflowSection() {
           </Card>
         </div>
         <div className="space-y-5">
-          <ChartCard title="Deferred Revenue Dynamics / 递延收入动态">
+          <ChartCard title="Deferred Revenue Dynamics / 递延收入动态" note="Member discounts reduce actual stored value consumption relative to recognized revenue. 会员折扣会降低实际储值消耗，因此实际储值扣减低于确认收入。">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={deferredRevenueData} margin={{ top: 16, right: 24, left: 0, bottom: 8 }}>
                 <CartesianGrid stroke="rgba(255,255,255,.06)" />
@@ -477,7 +478,7 @@ function CashflowSection() {
                 <Tooltip formatter={currencyTooltip} contentStyle={tooltipStyle} />
                 <Legend wrapperStyle={{ color: colors.muted, fontSize: 12 }} />
                 <Bar dataKey="storedCashIn" name="Stored Cash In / 储值现金流入" fill={colors.highlight} radius={[10, 10, 0, 0]} />
-                <Bar dataKey="recognizedFromStored" name="Recognized From Stored / 储值消耗确认" fill={colors.outdoor} radius={[10, 10, 0, 0]} />
+                <Bar dataKey="recognizedFromStored" name="Stored Value Consumption / 实际储值消耗" fill={colors.outdoor} radius={[10, 10, 0, 0]} />
                 <Line dataKey="deferredBalance" name="Deferred Balance / 递延余额" stroke={colors.risk} strokeWidth={3} dot={false} />
               </ComposedChart>
             </ResponsiveContainer>
@@ -485,7 +486,7 @@ function CashflowSection() {
           <div className="grid gap-5 lg:grid-cols-2">
             <ChartCard
               title="Stored Value Renewal / 储值续储"
-              note="Gold members renew stored value periodically as their balances are consumed through court booking, coaching and member events. Gold会员会随着订场、私教和会员活动消费持续消耗余额，并周期性续储。"
+              note="Gold renewals sustain cashflow while discounts make actual stored value consumption lower than recognized revenue. Gold周期性续储维持现金流，会员折扣使实际储值扣减低于确认收入。"
             >
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={storedValueQuarterlyData} margin={{ top: 18, right: 24, left: 0, bottom: 8 }}>

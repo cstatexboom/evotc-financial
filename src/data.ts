@@ -65,6 +65,12 @@ export const membership = {
   diamondStoredValue: 30_000,
   publicBookingShare: 0.2,
   memberBookingShare: 0.8,
+  goldMemberSpendShare: 0.9,
+  diamondMemberSpendShare: 0.1,
+  goldCourtStoredValueRate: 0.95,
+  diamondCourtStoredValueRate: 0.9,
+  goldCoachingStoredValueRate: 1,
+  diamondCoachingStoredValueRate: 0.95,
 };
 
 export const coaching = {
@@ -197,6 +203,7 @@ const diamondMonthlyConsumption = (membership.preOpeningDiamond * membership.dia
 let cashBalance = 0;
 let deferredBalance = 0;
 let goldMembers = membership.preOpeningGold;
+let diamondRemainingStoredValue = 0;
 const accountingProfitByYear: Record<number, number> = {};
 const renewalEventsByMonth = new Map<number, number>();
 
@@ -236,29 +243,54 @@ export const monthlyForecast = months.map((month) => {
 
   const initialGoldStoredValue = month.index === 0 ? membership.preOpeningGold * membership.goldStoredValue : 0;
   const diamondStoredValue = month.index === 0 ? membership.preOpeningDiamond * membership.diamondStoredValue : 0;
+  diamondRemainingStoredValue += diamondStoredValue;
   const investorCapitalCash = isOpeningCashMonth ? project.investorCapital : 0;
   const preOpeningMarketingPayment = isOpeningCashMonth ? project.preOpeningMarketing : 0;
   const firstStoredCash = initialGoldStoredValue + newGold * membership.goldStoredValue;
   let renewalStoredValue = renewalEventsByMonth.get(month.index) ?? 0;
   const publicCourtCash = court.total * membership.publicBookingShare;
-  const memberCourtConsumption = court.total * membership.memberBookingShare;
+  const publicCourtRevenue = publicCourtCash;
+  const memberCourtRevenue = court.total * membership.memberBookingShare;
+  const goldCourtRevenue = memberCourtRevenue * membership.goldMemberSpendShare;
+  const diamondCourtRevenue = memberCourtRevenue * membership.diamondMemberSpendShare;
+  const goldCourtStoredValueConsumption = goldCourtRevenue * membership.goldCourtStoredValueRate;
+  const diamondCourtStoredValueDemand = diamondCourtRevenue * membership.diamondCourtStoredValueRate;
   const courtBookingRevenue = court.total;
   const coachingRevenue = isOperatingMonth ? coachingSummary.monthlyRevenue : 0;
+  const goldCoachingRevenue = coachingRevenue * membership.goldMemberSpendShare;
+  const diamondCoachingRevenue = coachingRevenue * membership.diamondMemberSpendShare;
+  const goldCoachingStoredValueConsumption = goldCoachingRevenue * membership.goldCoachingStoredValueRate;
+  const diamondCoachingStoredValueDemand = diamondCoachingRevenue * membership.diamondCoachingStoredValueRate;
   const eventRevenue = isOperatingMonth ? eventSummary.monthlyRevenue : 0;
   const publicEventCash = eventRevenue * 0.2;
   const memberEventConsumptionFromStoredValue = eventRevenue * 0.8;
-  const coachingConsumptionFromStoredValue = coachingRevenue;
+  const rawDiamondStoredValueDemand = diamondCourtStoredValueDemand + diamondCoachingStoredValueDemand;
+  const targetDiamondStoredValueConsumption = isOperatingMonth
+    ? Math.max(rawDiamondStoredValueDemand, diamondMonthlyConsumption)
+    : diamondMonthlyConsumption;
+  const diamondStoredValueConsumption = Math.min(diamondRemainingStoredValue, targetDiamondStoredValueConsumption);
+  const diamondDemandScale = rawDiamondStoredValueDemand > 0
+    ? Math.min(1, diamondStoredValueConsumption / rawDiamondStoredValueDemand)
+    : 0;
+  const diamondCourtStoredValueConsumption = diamondCourtStoredValueDemand * diamondDemandScale;
+  const diamondCoachingStoredValueConsumption = diamondCoachingStoredValueDemand * diamondDemandScale;
+  const diamondScheduledStoredValueConsumption = Math.max(
+    0,
+    diamondStoredValueConsumption - diamondCourtStoredValueConsumption - diamondCoachingStoredValueConsumption,
+  );
+  diamondRemainingStoredValue -= diamondStoredValueConsumption;
   const goldMemberStoredValueConsumption =
-    memberCourtConsumption + coachingConsumptionFromStoredValue + memberEventConsumptionFromStoredValue;
-  const memberStoredValueConsumption = goldMemberStoredValueConsumption + diamondMonthlyConsumption;
-  // If scheduled renewals lag behind actual member consumption, members top up enough to keep roughly one month
-  // of stored-value liability on hand. This avoids negative deferred revenue without allowing it to compound without limit.
-  // This keeps the model realistic without treating coaching or member consumption as new cash twice.
-  const targetDeferredReserve = goldMemberStoredValueConsumption;
+    goldCourtStoredValueConsumption + goldCoachingStoredValueConsumption + memberEventConsumptionFromStoredValue;
+  const memberStoredValueConsumption = goldMemberStoredValueConsumption + diamondStoredValueConsumption;
+  // Actual consumption is lower than recognized revenue because of member discounts.
+  // Discounts should slow deferred revenue release, not weaken stored-value cash inflow.
+  // If scheduled renewals lag behind consumption, Gold members top up enough to keep roughly one month
+  // of stored-value liability on hand. This cash top-up is not used to create another renewal chain.
+  const targetDeferredReserve = memberStoredValueConsumption;
   const balanceProtectionRenewal = Math.max(
     0,
     targetDeferredReserve +
-      goldMemberStoredValueConsumption -
+      memberStoredValueConsumption -
       (deferredBalance + firstStoredCash + renewalStoredValue + diamondStoredValue),
   );
   renewalStoredValue += balanceProtectionRenewal;
@@ -300,6 +332,7 @@ export const monthlyForecast = months.map((month) => {
     investorCapitalCash,
     diamondStoredValue,
     diamondMonthlyConsumption,
+    diamondRemainingStoredValue,
     firstStoredCash,
     renewalStoredValue,
     balanceProtectionRenewal,
@@ -307,13 +340,23 @@ export const monthlyForecast = months.map((month) => {
     coveredCourtRevenue: court.covered,
     outdoorCourtRevenue: court.outdoor,
     courtBookingRevenue,
+    publicCourtRevenue,
     publicCourtCash,
-    memberCourtConsumption,
+    memberCourtRevenue,
+    goldCourtRevenue,
+    diamondCourtRevenue,
+    goldCourtStoredValueConsumption,
+    diamondCourtStoredValueConsumption,
     coachingRevenue,
-    coachingConsumptionFromStoredValue,
+    goldCoachingRevenue,
+    diamondCoachingRevenue,
+    goldCoachingStoredValueConsumption,
+    diamondCoachingStoredValueConsumption,
     eventRevenue,
     publicEventCash,
     memberEventConsumptionFromStoredValue,
+    diamondScheduledStoredValueConsumption,
+    diamondStoredValueConsumption,
     goldMemberStoredValueConsumption,
     memberStoredValueConsumption,
     recognizedRevenue,
